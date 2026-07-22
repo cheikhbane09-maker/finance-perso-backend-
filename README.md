@@ -12,6 +12,18 @@ API REST du projet Finance Personnelle, développée avec NestJS + TypeORM, dans
 - RBAC (rôles `user` / `admin`) pour l'autorisation
 - `class-validator` / `class-transformer` pour la validation des DTO
 - API externe gratuite : **ExchangeRate** (`open.er-api.com`, sans clé) pour la conversion de devises de l'épargne
+- Redis (cache), Prometheus/Grafana (monitoring), Docker, GitHub Actions (CI/CD), Jest (tests) — voir section **Bonus** ci-dessous
+
+## Bonus livrés (voir énoncé de l'examen)
+
+| Bonus | Où le trouver |
+|---|---|
+| Intégration de Redis | `src/common/redis.service.ts` — cache les taux de change (`ExchangeRateService`), avec repli automatique sur un cache mémoire si Redis est indisponible |
+| Monitoring Prometheus + Grafana | `GET /metrics` (`src/common/metrics.*`), `monitoring/prometheus.yml`, `monitoring/grafana/provisioning/` (datasource + dashboard préconfigurés) |
+| Pipeline CI/CD | `.github/workflows/ci.yml` (build, typecheck, tests unitaires + e2e à chaque push/PR) |
+| Tests unitaires et E2E | `src/**/*.spec.ts` (Jest) + `test/app.e2e-spec.ts` (supertest) — voir section **Tests** |
+| Dockerisation | `Dockerfile`, `.dockerignore`, `docker-compose.yml` (api + mysql + redis + prometheus + grafana) |
+| Déploiement cloud gratuit | `render.yaml` (Blueprint Render) — voir section **Déploiement** |
 
 ## Installation
 
@@ -49,6 +61,32 @@ DB_DATABASE=finance_perso
 
 Aucun changement de code n'est nécessaire pour basculer entre les deux : tout se règle dans `.env`.
 
+## Tout lancer avec Docker (API + MySQL + Redis + Prometheus + Grafana)
+
+```bash
+cd backend
+docker compose up --build
+```
+
+Ça démarre tout d'un coup :
+
+- API : `http://localhost:3000`
+- Métriques Prometheus (brutes) : `http://localhost:3000/metrics`
+- Prometheus (interface) : `http://localhost:9090`
+- Grafana : `http://localhost:3001` (identifiants `admin` / `admin`, ou accès anonyme activé) — le datasource Prometheus et un dashboard "Finance Perso - Backend" sont préconfigurés automatiquement
+- MySQL : `localhost:3306` (root / root, base `finance_perso`)
+- Redis : `localhost:6379`
+
+Pas besoin de XAMPP ni d'installer quoi que ce soit d'autre que Docker.
+
+## Tests
+
+```bash
+npm test        # tests unitaires (services : auth, transactions, epargne, RolesGuard)
+npm run test:e2e  # test end-to-end (inscription -> connexion -> CRUD transactions), base SQLite en memoire
+npm run test:cov  # avec couverture de code
+```
+
 ## Structure du projet — répartition en 3 sous-dossiers (1 par membre)
 
 ```
@@ -69,6 +107,8 @@ src/
 - Autorisation RBAC (`RolesGuard`, décorateur `@Roles()`)
 - Entité `User` (relation `OneToMany` vers `Transaction` et `Epargne`)
 - Configuration globale du projet (`app.module.ts`, `main.ts`, TypeORM, ValidationPipe, CORS)
+- Bonus infra : Redis (`src/common/redis.service.ts`), monitoring Prometheus/Grafana (`src/common/metrics.*`, `monitoring/`), Docker (`Dockerfile`, `docker-compose.yml`), CI/CD (`.github/workflows/ci.yml`), déploiement (`render.yaml`)
+- Tests : `auth.service.spec.ts`, `roles.guard.spec.ts`, `test/app.e2e-spec.ts`
 - Déploiement final
 
 ### Maguette THIAW — `modules/transactions`
@@ -76,12 +116,14 @@ src/
 - Entité `Transaction` (`ManyToOne` vers `User`, clé étrangère `userId`)
 - CRUD complet des revenus/dépenses : `POST /transactions`, `GET /transactions`, `GET /transactions/all` (admin), `PATCH /transactions/:id`, `DELETE /transactions/:id`
 - DTO + validation (`CreateTransactionDto`, `UpdateTransactionDto`)
+- Tests : `transactions.service.spec.ts`
 
 ### Ndeye Khady SECK — `modules/epargne`
 
 - Entité `Epargne` (compte bloqué, `ManyToOne` vers `User`)
 - CRUD : `POST /epargne`, `GET /epargne`, `DELETE /epargne/:id` (refuse le retrait avant la date de déblocage)
-- Intégration de l'API externe **ExchangeRate** (`ExchangeRateService`) : `GET /epargne/taux`, conversion du montant épargné via `?devise=USD`
+- Intégration de l'API externe **ExchangeRate** (`ExchangeRateService`) : `GET /epargne/taux`, conversion du montant épargné via `?devise=USD`, avec cache Redis
+- Tests : `epargne.service.spec.ts`
 
 ## Endpoints principaux
 
@@ -131,13 +173,16 @@ git push -u origin feature/auth-cheikh         # pousse uniquement votre branche
 
 Le projet étant présenté en présentiel, le plus simple est de lancer les deux projets en local le jour de la présentation (`npm run start:dev` ici + `npm run dev` côté frontend) — c'est largement suffisant, le déploiement cloud n'est qu'un bonus dans le sujet.
 
-Si vous voulez quand même déployer le backend en ligne (bonus), utilisez un hébergeur qui exécute du Node.js, par exemple :
+Si vous voulez quand même déployer le backend en ligne (bonus), le plus simple est **Render**, avec le `render.yaml` déjà fourni :
 
-- [Render](https://render.com) (Web Service gratuit, déploie directement depuis GitHub)
-- [Railway](https://railway.app)
-- [Fly.io](https://fly.io)
+1. Poussez le dépôt `backend` sur GitHub (public).
+2. Sur [render.com](https://render.com) : "New +" -> "Blueprint" -> sélectionnez le dépôt GitHub.
+3. Render lit `render.yaml`, construit l'image avec le `Dockerfile` et déploie automatiquement. `JWT_SECRET` est généré automatiquement, `DB_TYPE=sqlite` (aucune base externe à configurer).
+4. L'URL publique fournie (ex: `https://finance-perso-backend.onrender.com`) peut être utilisée par le frontend déployé sur GitHub Pages.
 
-Avec ces hébergeurs, gardez `DB_TYPE=sqlite` (le fichier `db.sqlite` fonctionne très bien en ligne) pour éviter d'avoir à configurer une base MySQL/Postgres séparée. XAMPP, lui, ne fonctionne qu'en local sur votre machine — il ne peut pas être utilisé par un backend déployé sur internet.
+Alternatives équivalentes : [Railway](https://railway.app), [Fly.io](https://fly.io) (ils lisent aussi directement le `Dockerfile`).
+
+XAMPP, lui, ne fonctionne qu'en local sur votre machine — il ne peut pas être utilisé par un backend déployé sur internet (utilisez `DB_TYPE=sqlite` pour le déploiement, comme dans `render.yaml`).
 
 ## Notes
 

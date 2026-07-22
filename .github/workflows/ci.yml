@@ -1,0 +1,36 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [main, dev, 'feature/**']
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Recuperer le code
+        uses: actions/checkout@v4
+
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Installer les dependances
+        run: npm ci
+
+      - name: Verifier les types (tsc)
+        run: npm run typecheck
+
+      - name: Compiler le projet
+        run: npm run build
+
+      - name: Lancer les tests unitaires
+        run: npm test -- --ci
+
+      - name: Lancer les tests end-to-end
+        run: npm run test:e2e -- --ci

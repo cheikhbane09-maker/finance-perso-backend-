@@ -1,0 +1,21 @@
+# Blueprint Render (https://render.com) : permet un deploiement en 1 clic
+# ("New +" -> "Blueprint" -> pointer sur ce depot GitHub).
+# Utilise le Dockerfile du projet, avec SQLite (aucune base externe a configurer).
+services:
+  - type: web
+    name: finance-perso-backend
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /metrics
+    envVars:
+      - key: PORT
+        value: 3000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 1d
+      - key: DB_TYPE
+        value: sqlite
+      - key: DB_PATH
+        value: db.sqlite

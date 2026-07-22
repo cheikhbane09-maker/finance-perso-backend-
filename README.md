@@ -5,7 +5,9 @@ API REST du projet Finance Personnelle, développée avec NestJS + TypeORM, dans
 ## Stack
 
 - NestJS (TypeScript)
-- TypeORM + SQLite (fichier `db.sqlite`, aucune installation de serveur de base de données nécessaire)
+- TypeORM, avec 2 options de base de données (voir section "Base de données" ci-dessous) :
+  - SQLite (fichier `db.sqlite`, par défaut, aucune installation nécessaire)
+  - MySQL via **XAMPP** (si vous préférez travailler avec phpMyAdmin)
 - JWT (`@nestjs/jwt`, `passport-jwt`) pour l'authentification
 - RBAC (rôles `user` / `admin`) pour l'autorisation
 - `class-validator` / `class-transformer` pour la validation des DTO
@@ -21,6 +23,31 @@ npm run start:dev
 ```
 
 Le serveur démarre sur `http://localhost:3000`.
+
+## Base de données : SQLite ou MySQL (XAMPP)
+
+Par défaut (`DB_TYPE=sqlite` dans `.env`), le backend utilise un simple fichier `db.sqlite` : rien à installer, rien à configurer, ça marche directement après `npm install`.
+
+Si vous préférez utiliser **XAMPP** (MySQL + phpMyAdmin) :
+
+1. Lancez le panneau de contrôle XAMPP et démarrez le module **MySQL** (pas besoin d'Apache, NestJS a son propre serveur).
+2. Ouvrez phpMyAdmin (`http://localhost/phpmyadmin`) et créez une base de données vide nommée `finance_perso` (bouton "Nouvelle base de données").
+3. Dans `backend/.env`, changez :
+
+```env
+DB_TYPE=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_USERNAME=root
+DB_PASSWORD=
+DB_DATABASE=finance_perso
+```
+
+(Avec XAMPP, l'utilisateur `root` n'a en général pas de mot de passe — laissez `DB_PASSWORD` vide sauf si vous en avez défini un.)
+
+4. Relancez `npm run start:dev`. TypeORM (`synchronize: true`) crée automatiquement toutes les tables dans `finance_perso` au démarrage — vous les verrez apparaître dans phpMyAdmin.
+
+Aucun changement de code n'est nécessaire pour basculer entre les deux : tout se règle dans `.env`.
 
 ## Structure du projet — répartition en 3 sous-dossiers (1 par membre)
 
@@ -97,6 +124,20 @@ git push -u origin feature/auth-cheikh         # pousse uniquement votre branche
 ```
 
 3. Une fois toutes les branches poussées, ouvrez des Pull Requests `feature/* -> dev`, puis `dev -> main` sur GitHub (ou fusionnez directement si vous préférez).
+
+## Déploiement — attention, GitHub Pages ne suffit pas pour le backend
+
+**GitHub Pages héberge uniquement des fichiers statiques (HTML/CSS/JS).** Il ne peut pas exécuter de serveur Node.js/NestJS ni de base de données. C'est pour ça que le script `npm run deploy` du frontend (`gh-pages -d dist`) fonctionne pour la partie React, mais ne fera jamais tourner ce backend.
+
+Le projet étant présenté en présentiel, le plus simple est de lancer les deux projets en local le jour de la présentation (`npm run start:dev` ici + `npm run dev` côté frontend) — c'est largement suffisant, le déploiement cloud n'est qu'un bonus dans le sujet.
+
+Si vous voulez quand même déployer le backend en ligne (bonus), utilisez un hébergeur qui exécute du Node.js, par exemple :
+
+- [Render](https://render.com) (Web Service gratuit, déploie directement depuis GitHub)
+- [Railway](https://railway.app)
+- [Fly.io](https://fly.io)
+
+Avec ces hébergeurs, gardez `DB_TYPE=sqlite` (le fichier `db.sqlite` fonctionne très bien en ligne) pour éviter d'avoir à configurer une base MySQL/Postgres séparée. XAMPP, lui, ne fonctionne qu'en local sur votre machine — il ne peut pas être utilisé par un backend déployé sur internet.
 
 ## Notes
 

@@ -6,6 +6,7 @@ import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { TransactionsModule } from './modules/transactions/transactions.module';
 import { EpargneModule } from './modules/epargne/epargne.module';
+import { CommonModule } from './common/common.module';
 
 import { User } from './modules/users/user.entity';
 import { Transaction } from './modules/transactions/transaction.entity';
@@ -41,6 +42,7 @@ import { Epargne } from './modules/epargne/epargne.entity';
         };
       },
     }),
+    CommonModule,
     UsersModule,
     AuthModule,
     TransactionsModule,

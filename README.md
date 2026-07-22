@@ -84,6 +84,20 @@ Toutes les routes (sauf `/auth/*`) nécessitent un header `Authorization: Bearer
 
 Chaque membre travaille sur sa branche `feature/*`, fusionne dans `dev`, puis `dev` est fusionné dans `main` une fois le projet validé.
 
+## Pousser votre branche sur GitHub (après réception du zip)
+
+1. Le chef crée un dépôt GitHub **vide** (ex: `finance-perso-backend`) et partage son URL.
+2. Chaque membre, après avoir dézippé le projet :
+
+```bash
+cd backend
+git remote add origin <URL_DU_DEPOT_GITHUB>   # une seule fois
+git checkout feature/auth-cheikh              # ou votre branche : feature/transactions-maguette / feature/epargne-ndeyekhady
+git push -u origin feature/auth-cheikh         # pousse uniquement votre branche
+```
+
+3. Une fois toutes les branches poussées, ouvrez des Pull Requests `feature/* -> dev`, puis `dev -> main` sur GitHub (ou fusionnez directement si vous préférez).
+
 ## Notes
 
 - `synchronize: true` (TypeORM) crée automatiquement les tables au démarrage — pratique pour un projet pédagogique, à désactiver en production au profit de migrations.
